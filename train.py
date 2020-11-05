@@ -126,8 +126,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--method", default="bert_siamese", type=str, help="method")
     ap.add_argument("--mode", default="train", type=str, help="mode")
-    ap.add_argument("--test_file", default="./results/", type=str, help="file")
     ap.add_argument("--config", default="./configs/config_siamese.yml", type=str, help="config")
+    # For prediction
+    ap.add_argument("--test_file", default="./results/", type=str, help="file")
     ap.add_argument("--result_file", default="result.txt", type=str, help="result file")
     args = ap.parse_args()
     if args.mode == 'train' and args.method == 'rnn':
