@@ -3,7 +3,7 @@
 python=3.5
 TensorFlow=1.2.1
 """
-
+import sys
 import time
 import numpy as np
 import tensorflow as tf
@@ -24,13 +24,12 @@ NEG = 4
 # query batch size
 query_BS = 100
 # batch size
-BS = query_BS * NEG
+#BS = query_BS * NEG
 
 # 读取数据
 conf = Config()
 data_train = data_input.get_data(conf.file_train)
 data_vali = data_input.get_data(conf.file_vali)
-# print(len(data_train['query']), query_BS, len(data_train['query']) / query_BS)
 train_epoch_steps = int(len(data_train['query']) / query_BS) - 1
 vali_epoch_steps = int(len(data_vali['query']) / query_BS) - 1
 

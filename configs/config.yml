@@ -16,12 +16,14 @@ word_dim: 100
 batch_size: 128
 keep_porb: 0.5
 # checkpoint_dir
-checkpoint_dir: './results/checkpoint/bert/model'
+checkpoint_dir: './results/checkpoint/'
 nwords: 21128
+dataset_dir: './data/article'
+dataset_prefix: 'article_'
 
 # bert
 # bert_dir: &bert_dir '/mnt/nlp/bert/chinese_L-12_H-768_A-12/'
-bert_dir: '/Volumes/HddData/ProjectData/NLP/bert/chinese_L-12_H-768_A-12/'
-bert_init_checkpoint: "bert_model.ckpt"
-bert_vocab: "vocab.txt"
-bert_config: "bert_config.json"
+#bert_dir: '/Volumes/HddData/ProjectData/NLP/bert/chinese_L-12_H-768_A-12/'
+#bert_init_checkpoint: "bert_model.ckpt"
+#bert_vocab: "vocab.txt"
+#bert_config: "bert_config.json"

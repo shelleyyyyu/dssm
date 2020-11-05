@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding=utf-8
+import sys
 from inspect import getblock
 import json
 import os
@@ -216,6 +217,7 @@ def get_data(file_path):
     :param file_path:
     :return: [[query, pos sample, 4 neg sample]], shape = [n, 6]
     """
+    #蒲公英	{"蒲公英根": "0.013", "蒲公英茶可以天天喝吗": "0.013", "蒲公英茶的功效与作用": "0.130", "蒲公英根泡水喝的功效": "0.025", "蒲公英之恋": "0.010", "蒲公英图片": "0.059", "蒲公英的功效": "0.018", "蒲公英泡水喝的功效": "0.018", "蒲公英茶": "0.057", "蒲公英的功效与作用": "0.113"}	蒲公英	应用
     data_map = {'query': [], 'query_len': [], 'doc_pos': [], 'doc_pos_len': [], 'doc_neg': [], 'doc_neg_len': []}
     with open(file_path, encoding='utf8') as f:
         for line in f.readlines():
@@ -252,6 +254,7 @@ def get_data_siamese_rnn(file_path):
     :return: [[query, pos sample, 4 neg sample]], shape = [n, 6]
     """
     data_arr = []
+    # 蒲公英	{"蒲公英根": "0.013", "蒲公英茶可以天天喝吗": "0.013", "蒲公英茶的功效与作用": "0.130", "蒲公英根泡水喝的功效": "0.025", "蒲公英之恋": "0.010", "蒲公英图片": "0.059", "蒲公英的功效": "0.018", "蒲公英泡水喝的功效": "0.018", "蒲公英茶": "0.057", "蒲公英的功效与作用": "0.113"}	蒲公英	应用
     with open(file_path, encoding='utf8') as f:
         for line in f.readlines():
             spline = line.strip().split('\t')
@@ -276,6 +279,7 @@ def get_data_bow(file_path):
             spline = line.strip().split('\t')
             if len(spline) < 4:
                 continue
+            # 蒲公英	{"蒲公英根": "0.013", "蒲公英茶可以天天喝吗": "0.013", "蒲公英茶的功效与作用": "0.130", "蒲公英根泡水喝的功效": "0.025", "蒲公英之恋": "0.010", "蒲公英图片": "0.059", "蒲公英的功效": "0.018", "蒲公英泡水喝的功效": "0.018", "蒲公英茶": "0.057", "蒲公英的功效与作用": "0.113"}	蒲公英	应用
             prefix, _, title, tag, label = spline
             prefix_ids = convert_seq2bow(prefix, conf.vocab_map)
             title_ids = convert_seq2bow(title, conf.vocab_map)
@@ -293,18 +297,53 @@ def trans_lcqmc(dataset):
         t1_len = conf.max_seq_len if len(t1) > conf.max_seq_len else len(t1)
         t2_ids = convert_word2id(t2, conf.vocab_map)
         t2_len = conf.max_seq_len if len(t2) > conf.max_seq_len else len(t2)
-        # t2_len = len(t2) 
+        # t2_len = len(t2)
         out_arr.append([t1_ids, t1_len, t2_ids, t2_len, label])
         # out_arr.append([t1_ids, t1_len, t2_ids, t2_len, label, t1, t2])
         text_len.extend([len(t1), len(t2)])
         pass
-    print("max len", max(text_len), "avg len", mean(text_len), "cover rate:", np.mean([x <= conf.max_seq_len for x in text_len]))
+    print("max len", max(text_len), "; avg len", '%.4f'%mean(text_len), "; cover rate:", np.mean([x <= conf.max_seq_len for x in text_len]))
     return out_arr
+
+def trans_article(fname):
+    """
+    最大长度
+    """
+    out_arr, text_len = [], []
+    with open(fname, 'r', encoding='utf-8') as file:
+        data = file.readlines()
+        for each in data:
+            tmp_arr = each.strip().split('\t')
+            if len(tmp_arr) != 3:
+                continue
+            t1, t2, label = tmp_arr[0], tmp_arr[1], tmp_arr[2]
+            t1_ids = convert_word2id(t1, conf.vocab_map)
+            t1_len = conf.max_seq_len if len(t1) > conf.max_seq_len else len(t1)
+            t2_ids = convert_word2id(t2, conf.vocab_map)
+            t2_len = conf.max_seq_len if len(t2) > conf.max_seq_len else len(t2)
+            # t2_len = len(t2)
+            out_arr.append([t1_ids, t1_len, t2_ids, t2_len, label])
+            # out_arr.append([t1_ids, t1_len, t2_ids, t2_len, label, t1, t2])
+            text_len.extend([len(t1), len(t2)])
+            pass
+        print("max len", max(text_len), "; avg len", '%.4f'%mean(text_len), "; cover rate:", np.mean([x <= conf.max_seq_len for x in text_len]))
+    return out_arr
+
+def get_article(config):
+    train_fname = os.path.join(config['dataset_dir'], config['dataset_prefix']+'train.txt')
+    valid_fname = os.path.join(config['dataset_dir'], config['dataset_prefix']+'valid.txt')
+    test_fname = os.path.join(config['dataset_dir'], config['dataset_prefix']+'test.txt')
+    train_set = trans_article(train_fname)
+    dev_set = trans_article(valid_fname)
+    test_set = trans_article(test_fname)
+    return train_set, dev_set, test_set
+    # return test_set, test_set, test_set
 
 def get_lcqmc():
     """
     使用LCQMC数据集，并将其转为word_id
     """
+    #['喜欢打篮球的男生喜欢什么样的女生', 16, '爱打篮球的男生喜欢什么样的女生', 15, 1]
     dataset = hub.dataset.LCQMC()
     train_set = trans_lcqmc(dataset.train_examples)
     dev_set = trans_lcqmc(dataset.dev_examples)

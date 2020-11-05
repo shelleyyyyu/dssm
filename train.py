@@ -31,9 +31,9 @@ def train_siamese():
     cfg_path = "./configs/config.yml"
     cfg = yaml.load(open(cfg_path, encoding='utf-8'), Loader=yaml.FullLoader)
     # 读取数据
-    data_train, data_val, data_test = data_input.get_lcqmc()
+    data_train, data_val, data_test = data_input.get_article(cfg)
     # data_train = data_train[:10000]
-    print("train size:{},val size:{}, test size:{}".format(
+    print("train size:{}, val size:{}, test size:{}".format(
         len(data_train), len(data_val), len(data_test)))
     model = SiamenseRNN(cfg)
     model.fit(data_train, data_val, data_test)
@@ -122,7 +122,7 @@ def predict_bert(file_="./results/input/test"):
     pass
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "4"
     ap = argparse.ArgumentParser()
     ap.add_argument("--method", default="bert_siamese", type=str, help="train/predict")
     ap.add_argument("--mode", default="train", type=str, help="train/predict")
