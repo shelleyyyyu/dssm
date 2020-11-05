@@ -387,9 +387,9 @@ def get_test(file_:str, vocab:Vocabulary):
     test_arr = read_file(file_, '\t') # [[q1, q2],...]
     out_arr = []
     for line in test_arr:
-        if len(line) != 2:
+        if len(line) != 3:
             print('wrong line size=', len(line))
-        t1, t2 = line   # [t1_ids, t1_len, t2_ids, t2_len, label]
+        t1, t2, label = line   # [t1_ids, t1_len, t2_ids, t2_len, label]
         t1_ids = vocab._transform_seq2id(t1, padding=1)
         t1_len = vocab.max_len if len(t1) > vocab.max_len else len(t1)
         t2_ids = vocab._transform_seq2id(t2, padding=1)

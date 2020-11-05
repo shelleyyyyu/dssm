@@ -25,10 +25,10 @@ from model.siamese_network import SiamenseRNN, SiamenseBert
 from data_input import Vocabulary, get_test
 from util import write_file
 
-def train_siamese():
+def train_siamese(cfg_path):
     # 读取配置
     # conf = Config()
-    cfg_path = "./configs/config.yml"
+    #cfg_path = "./configs/config.yml"
     cfg = yaml.load(open(cfg_path, encoding='utf-8'), Loader=yaml.FullLoader)
     # 读取数据
     data_train, data_val, data_test = data_input.get_article(cfg)
@@ -39,9 +39,9 @@ def train_siamese():
     model.fit(data_train, data_val, data_test)
     pass
 
-def predict_siamese(file_='./results/'):
+def predict_siamese(cfg_path, file_, result_file):
     # 加载配置
-    cfg_path = "./configs/config.yml"
+    #cfg_path = "./configs/config.yml"
     cfg = yaml.load(open(cfg_path, encoding='utf-8'), Loader=yaml.FullLoader)
     # 将 seq转为id，
     vocab = Vocabulary(meta_file='./data/vocab.txt', max_len=cfg['max_seq_len'], allow_unk=1, unk='[UNK]', pad='[PAD]')
@@ -51,7 +51,7 @@ def predict_siamese(file_='./results/'):
     model.restore_session(cfg["checkpoint_dir"])
     test_label, test_prob = model.predict(test_arr)
     out_arr = [x + [test_label[i]] + [test_prob[i]] for i, x in enumerate(query_arr)]
-    write_file(out_arr, file_ + '.siamese.predict', )
+    write_file(out_arr, result_file)
     pass
 
 def train_siamese_bert():
@@ -124,14 +124,16 @@ def predict_bert(file_="./results/input/test"):
 if __name__ == "__main__":
     #os.environ["CUDA_VISIBLE_DEVICES"] = "4"
     ap = argparse.ArgumentParser()
-    ap.add_argument("--method", default="bert_siamese", type=str, help="train/predict")
-    ap.add_argument("--mode", default="train", type=str, help="train/predict")
-    ap.add_argument("--file", default="./results/input/test", type=str, help="train/predict")
+    ap.add_argument("--method", default="bert_siamese", type=str, help="method")
+    ap.add_argument("--mode", default="train", type=str, help="mode")
+    ap.add_argument("--test_file", default="./results/", type=str, help="file")
+    ap.add_argument("--config", default="./configs/config_siamese.yml", type=str, help="config")
+    ap.add_argument("--result_file", default="result.txt", type=str, help="result file")
     args = ap.parse_args()
     if args.mode == 'train' and args.method == 'rnn':
-        train_siamese()
+        train_siamese(args.config)
     elif args.mode == 'predict' and args.method == 'rnn':
-        predict_siamese(args.file)
+        predict_siamese(args.config, args.test_file, args.result_file)
     elif args.mode == 'train' and args.method == 'bert_siamese':
         train_siamese_bert()
     elif args.mode == 'predict' and args.method == 'bert_siamese':
