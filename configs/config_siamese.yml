@@ -18,7 +18,7 @@ keep_porb: 0.5
 # checkpoint_dir
 checkpoint_dir: './results/checkpoint/'
 nwords: 21128
-dataset_dir: './data/article_debug'
+dataset_dir: './data/article'
 dataset_prefix: 'article_'
 
 # bert
