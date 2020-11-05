@@ -189,17 +189,16 @@ def gen_word_set(file_path, out_path='./data/words.txt'):
             o.write(w + '\n')
     pass
 
-def convert_word2id(query, vocab_map):
+def convert_word2id(max_seq_len, query, vocab_map, unk='[UNK]', pad='[PAD]'):
     ids = []
     for w in query:
         if w in vocab_map:
             ids.append(vocab_map[w])
         else:
             ids.append(vocab_map[conf.unk])
-    while len(ids) < conf.max_seq_len:
+    while len(ids) < max_seq_len:
         ids.append(vocab_map[conf.pad])
-    return ids[:conf.max_seq_len]
-
+    return ids[:max_seq_len]
 
 def convert_seq2bow(query, vocab_map):
     bow_ids = np.zeros(conf.nwords)
@@ -209,7 +208,6 @@ def convert_seq2bow(query, vocab_map):
         else:
             bow_ids[vocab_map[conf.unk]] += 1
     return bow_ids
-
 
 def get_data(file_path):
     """
@@ -246,7 +244,6 @@ def get_data(file_path):
             pass
     return data_map
 
-
 def get_data_siamese_rnn(file_path):
     """
     gen datasets, convert word into word ids.
@@ -265,7 +262,6 @@ def get_data_siamese_rnn(file_path):
             title_seq = convert_word2id(title, conf.vocab_map)
             data_arr.append([prefix_seq, title_seq, int(label)])
     return data_arr
-
 
 def get_data_bow(file_path):
     """
@@ -305,11 +301,11 @@ def trans_lcqmc(dataset):
     print("max len", max(text_len), "; avg len", '%.4f'%mean(text_len), "; cover rate:", np.mean([x <= conf.max_seq_len for x in text_len]))
     return out_arr
 
-def trans_article(fname):
+def trans_article(config, fname):
     """
     最大长度
     """
-    out_arr, text_len = [], []
+    out_arr, text_q_len, text_d_len = [], [], []
     with open(fname, 'r', encoding='utf-8') as file:
         data = file.readlines()
         for each in data:
@@ -317,25 +313,27 @@ def trans_article(fname):
             if len(tmp_arr) != 3:
                 continue
             t1, t2, label = tmp_arr[0], tmp_arr[1], tmp_arr[2]
-            t1_ids = convert_word2id(t1, conf.vocab_map)
-            t1_len = conf.max_seq_len if len(t1) > conf.max_seq_len else len(t1)
-            t2_ids = convert_word2id(t2, conf.vocab_map)
-            t2_len = conf.max_seq_len if len(t2) > conf.max_seq_len else len(t2)
+            t1_ids = convert_word2id(config['max_query_seq_len'], t1, conf.vocab_map)
+            t1_len = config['max_query_seq_len'] if len(t1) > config['max_query_seq_len'] else len(t1)
+            t2_ids = convert_word2id(config['max_doc_seq_len'], t2, conf.vocab_map)
+            t2_len = config['max_doc_seq_len'] if len(t2) > config['max_doc_seq_len'] else len(t2)
             # t2_len = len(t2)
             out_arr.append([t1_ids, t1_len, t2_ids, t2_len, label])
             # out_arr.append([t1_ids, t1_len, t2_ids, t2_len, label, t1, t2])
-            text_len.extend([len(t1), len(t2)])
+            text_d_len.extend([len(t2)])
+            text_q_len.extend([len(t1)])
             pass
-        print("max len", max(text_len), "; avg len", '%.4f'%mean(text_len), "; cover rate:", np.mean([x <= conf.max_seq_len for x in text_len]))
+        print("Q: max len", max(text_q_len), "; avg len", '%.4f'%mean(text_q_len), "; cover rate:", np.mean([x <= config['max_query_seq_len'] for x in text_q_len]))
+        print("D: max len", max(text_d_len), "; avg len", '%.4f'%mean(text_d_len), "; cover rate:", np.mean([x <= config['max_doc_seq_len'] for x in text_d_len]))
     return out_arr
 
 def get_article(config):
     train_fname = os.path.join(config['dataset_dir'], config['dataset_prefix']+'train.txt')
     valid_fname = os.path.join(config['dataset_dir'], config['dataset_prefix']+'valid.txt')
     test_fname = os.path.join(config['dataset_dir'], config['dataset_prefix']+'test.txt')
-    train_set = trans_article(train_fname)
-    dev_set = trans_article(valid_fname)
-    test_set = trans_article(test_fname)
+    train_set = trans_article(config, train_fname)
+    dev_set = trans_article(config, valid_fname)
+    test_set = trans_article(config, test_fname)
     return train_set, dev_set, test_set
     # return test_set, test_set, test_set
 
