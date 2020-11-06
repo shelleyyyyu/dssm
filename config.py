@@ -26,12 +26,11 @@ class Config(object):
     unk = '[UNK]'
     pad = '[PAD]'
     vocab_path = './data/vocab.txt'
-    # file_train = './data/oppo_round1_train_20180929.mini'
-    # file_train = './data/oppo_round1_train_20180929.txt'
-    # file_vali = './data/oppo_round1_vali_20180929.mini'
-    file_vali = './data/oppo_round1_vali_20180929.txt'
-    file_train = file_vali
-    max_seq_len = 40
+    file_train = './data/article_pos_4neg/article_train.txt' #change
+    file_valid = './data/article_pos_4neg/article_valid.txt' #change
+    file_test = './data/article_pos_4neg/article_test.txt' #change
+    max_query_seq_len = 10
+    max_doc_seq_len = 1000
     hidden_size_rnn = 100
     use_stack_rnn = False
     learning_rate = 0.001
@@ -44,8 +43,9 @@ class Config(object):
     gpu = 0
     word_dim = 100
     batch_size = 64
-    keep_porb = 0.5
-    dropout = 1- keep_porb
+    keep_prob = 0.5
+    dropout = 1- keep_prob
+    query_BS = 64 #change
 
     # checkpoint_dir
     checkpoint_dir='./results/checkpoint'

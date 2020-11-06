@@ -2,7 +2,7 @@ unk: '[UNK]'
 pad: '[PAD]'
 vocab_path: './data/vocab.txt'
 max_query_seq_len: 10
-max_doc_seq_len: 30000
+max_doc_seq_len: 2000
 hidden_size_rnn: 200
 use_stack_rnn: False
 learning_rate: 0.0005

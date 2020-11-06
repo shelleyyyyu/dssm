@@ -4,6 +4,7 @@ python=3.5
 TensorFlow=1.2.1
 """
 import sys
+import os
 import time
 import numpy as np
 import tensorflow as tf
@@ -12,27 +13,23 @@ from config import Config
 import random
 
 random.seed(9102)
-
 start = time.time()
 # 是否加BN层
 norm, epsilon = False, 0.001
-
 # TRIGRAM_D = 21128
-TRIGRAM_D = 100
+TRIGRAM_D = 80
 # negative sample
 NEG = 4
 # query batch size
-query_BS = 100
+#conf.query_BS = 128
 # batch size
-#BS = query_BS * NEG
 
 # 读取数据
 conf = Config()
-data_train = data_input.get_data(conf.file_train)
-data_vali = data_input.get_data(conf.file_vali)
-train_epoch_steps = int(len(data_train['query']) / query_BS) - 1
-vali_epoch_steps = int(len(data_vali['query']) / query_BS) - 1
-
+data_train = data_input.get_article_data(conf.file_train)
+data_vali = data_input.get_article_data(conf.file_valid)
+train_epoch_steps = int(len(data_train['query']) / conf.query_BS) - 1
+vali_epoch_steps = int(len(data_vali['query']) / conf.query_BS) - 1
 
 def variable_summaries(var, name):
     """Attach a lot of summaries to a Tensor."""
@@ -108,7 +105,7 @@ with tf.name_scope('Merge_Negative_Doc'):
     doc_y = tf.tile(doc_pos_rnn_output, [1, 1])
 
     for i in range(NEG):
-        for j in range(query_BS):
+        for j in range(conf.query_BS):
             # slice(input_, begin, size)切片API
             # doc_y = tf.concat([doc_y, tf.slice(doc_negative_y, [j * NEG + i, 0], [1, -1])], 0)
             doc_y = tf.concat([doc_y, tf.slice(doc_neg_rnn_output, [j * NEG + i, 0], [1, -1])], 0)
@@ -126,7 +123,7 @@ with tf.name_scope('Cosine_Similarity'):
     # cos_sim_raw = query * doc / (||query|| * ||doc||)
     cos_sim_raw = tf.truediv(prod, norm_prod)
     # gamma = 20
-    cos_sim = tf.transpose(tf.reshape(tf.transpose(cos_sim_raw), [NEG + 1, query_BS])) * 20
+    cos_sim = tf.transpose(tf.reshape(tf.transpose(cos_sim_raw), [NEG + 1, conf.query_BS])) * 20
 
 with tf.name_scope('Loss'):
     # Train Loss
@@ -158,12 +155,12 @@ with tf.name_scope('Train'):
 
 
 def pull_batch(data_map, batch_id):
-    query_in = data_map['query'][batch_id * query_BS:(batch_id + 1) * query_BS]
-    query_len = data_map['query_len'][batch_id * query_BS:(batch_id + 1) * query_BS]
-    doc_positive_in = data_map['doc_pos'][batch_id * query_BS:(batch_id + 1) * query_BS]
-    doc_positive_len = data_map['doc_pos_len'][batch_id * query_BS:(batch_id + 1) * query_BS]
-    doc_negative_in = data_map['doc_neg'][batch_id * query_BS * NEG:(batch_id + 1) * query_BS * NEG]
-    doc_negative_len = data_map['doc_neg_len'][batch_id * query_BS * NEG:(batch_id + 1) * query_BS * NEG]
+    query_in = data_map['query'][batch_id * conf.query_BS:(batch_id + 1) * conf.query_BS]
+    query_len = data_map['query_len'][batch_id * conf.query_BS:(batch_id + 1) * conf.query_BS]
+    doc_positive_in = data_map['doc_pos'][batch_id * conf.query_BS:(batch_id + 1) * conf.query_BS]
+    doc_positive_len = data_map['doc_pos_len'][batch_id * conf.query_BS:(batch_id + 1) * conf.query_BS]
+    doc_negative_in = data_map['doc_neg'][batch_id * conf.query_BS * NEG:(batch_id + 1) * conf.query_BS * NEG]
+    doc_negative_len = data_map['doc_neg_len'][batch_id * conf.query_BS * NEG:(batch_id + 1) * conf.query_BS * NEG]
 
     # query_in, doc_positive_in, doc_negative_in = pull_all(query_in, doc_positive_in, doc_negative_in)
     return query_in, doc_positive_in, doc_negative_in, query_len, doc_positive_len, doc_negative_len
@@ -173,9 +170,9 @@ def feed_dict(on_training, data_set, batch_id, drop_prob):
     query_in, doc_positive_in, doc_negative_in, query_seq_len, pos_seq_len, neg_seq_len = pull_batch(data_set,
                                                                                                      batch_id)
     query_len = len(query_in)
-    query_seq_len = [conf.max_seq_len] * query_len
-    pos_seq_len = [conf.max_seq_len] * query_len
-    neg_seq_len = [conf.max_seq_len] * query_len * NEG
+    query_seq_len = [conf.max_query_seq_len] * query_len
+    pos_seq_len = [conf.max_doc_seq_len] * query_len
+    neg_seq_len = [conf.max_doc_seq_len] * query_len * NEG
     return {query_batch: query_in, doc_pos_batch: doc_positive_in, doc_neg_batch: doc_negative_in,
             on_train: on_training, drop_out_prob: drop_prob, query_seq_length: query_seq_len,
             neg_seq_length: neg_seq_len, pos_seq_length: pos_seq_len}
@@ -194,6 +191,7 @@ with tf.Session() as sess:
     train_writer = tf.summary.FileWriter(conf.summaries_dir + '/train', sess.graph)
 
     start = time.time()
+    best_valid_loss = 10000.0
     for epoch in range(conf.num_epoch):
         batch_ids = [i for i in range(train_epoch_steps)]
         random.shuffle(batch_ids)
@@ -206,6 +204,11 @@ with tf.Session() as sess:
         for i in range(train_epoch_steps):
             loss_v = sess.run(loss, feed_dict=feed_dict(False, data_train, i, 1))
             epoch_loss += loss_v
+            #print(len(prob))
+            #print(len(hit_prob))
+            #print(prob[0])
+            #print(hit_prob[0])
+            #sys.exit()
 
         epoch_loss /= (train_epoch_steps)
         train_loss = sess.run(train_loss_summary, feed_dict={train_average_loss: epoch_loss})
@@ -217,7 +220,7 @@ with tf.Session() as sess:
         start = time.time()
         epoch_loss = 0
         for i in range(vali_epoch_steps):
-            loss_v = sess.run(loss, feed_dict=feed_dict(False, data_vali, i, 1))
+            loss_v = sess.run(loss, feed_dict=feed_dict(False, data_vali, i, conf.dropout))
             epoch_loss += loss_v
         epoch_loss /= (vali_epoch_steps)
         test_loss = sess.run(loss_summary, feed_dict={average_loss: epoch_loss})
@@ -225,7 +228,10 @@ with tf.Session() as sess:
         # test_writer.add_summary(test_loss, step + 1)
         print("Epoch #%d | Test  Loss: %-4.3f | Calc_LossTime: %-3.3fs" %
               (epoch, epoch_loss, start - end))
-
-    # 保存模型
-    save_path = saver.save(sess, "model/model_1.ckpt")
-    print("Model saved in file: ", save_path)
+        if best_valid_loss > epoch_loss:
+            # 保存模型
+            if not os.path.exists(conf.checkpoint_dir):
+                os.mkdir(conf.checkpoint_dir)
+            save_path = saver.save(sess, os.path.join(conf.checkpoint_dir, "model.ckpt"))
+            print("Model saved in file: ", save_path)
+            best_valid_loss = epoch_loss

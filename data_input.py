@@ -244,6 +244,50 @@ def get_data(file_path):
             pass
     return data_map
 
+def get_article_data(file_path):
+    """
+    gen datasets, convert word into word ids.
+    :param file_path:
+    :return: [[query, pos sample, 4 neg sample]], shape = [n, 6]
+    """
+    #蒲公英	{"蒲公英根": "0.013", "蒲公英茶可以天天喝吗": "0.013", "蒲公英茶的功效与作用": "0.130", "蒲公英根泡水喝的功效": "0.025", "蒲公英之恋": "0.010", "蒲公英图片": "0.059", "蒲公英的功效": "0.018", "蒲公英泡水喝的功效": "0.018", "蒲公英茶": "0.057", "蒲公英的功效与作用": "0.113"}	蒲公英	应用
+    data_map = {'query': [], 'query_len': [], 'doc_pos': [], 'doc_pos_len': [], 'doc_neg': [], 'doc_neg_len': []}
+    with open(file_path, encoding='utf8') as f:
+        raw_data = f.readlines()
+        pos_neg_group = int(len(raw_data)/5)
+        for count in range(pos_neg_group):
+            if len(raw_data[count*5].strip().split('\t')) != 3 \
+                and raw_data[(count*5)+1].strip().split('\t') != 3 \
+                and raw_data[(count*5)+2].strip().split('\t') != 3 \
+                and raw_data[(count*5)+3].strip().split('\t') != 3 \
+                and raw_data[(count*5)+4].strip().split('\t') != 3:
+                continue
+            pos_q, pos_doc, pos_label = raw_data[count*5].strip().split('\t')
+            neg_1_q, neg_1_doc, neg_1_label = raw_data[(count*5)+1].strip().split('\t')
+            neg_2_q, neg_2_doc, neg_2_label = raw_data[(count*5)+2].strip().split('\t')
+            neg_3_q, neg_3_doc, neg_3_label = raw_data[(count*5)+3].strip().split('\t')
+            neg_4_q, neg_4_doc, neg_4_label = raw_data[(count*5)+4].strip().split('\t')
+            cur_arr, cur_len = [], []
+            # only 4 negative sample
+            cur_arr.append(convert_word2id(conf.max_doc_seq_len, neg_1_doc, conf.vocab_map))
+            cur_len.append(len(neg_1_doc) if len(neg_1_doc) < conf.max_doc_seq_len else conf.max_doc_seq_len)
+            cur_arr.append(convert_word2id(conf.max_doc_seq_len, neg_2_doc, conf.vocab_map))
+            cur_len.append(len(neg_2_doc) if len(neg_2_doc) < conf.max_doc_seq_len else conf.max_doc_seq_len)
+            cur_arr.append(convert_word2id(conf.max_doc_seq_len, neg_3_doc, conf.vocab_map))
+            cur_len.append(len(neg_3_doc) if len(neg_3_doc) < conf.max_doc_seq_len else conf.max_doc_seq_len)
+            cur_arr.append(convert_word2id(conf.max_doc_seq_len, neg_4_doc, conf.vocab_map))
+            cur_len.append(len(neg_4_doc) if len(neg_4_doc) < conf.max_doc_seq_len else conf.max_doc_seq_len)
+
+            if len(cur_arr) >= 4:
+                data_map['query'].append(convert_word2id(conf.max_query_seq_len, pos_q, conf.vocab_map))
+                data_map['query_len'].append(len(pos_q) if len(pos_q) < conf.max_query_seq_len else conf.max_query_seq_len)
+                data_map['doc_pos'].append(convert_word2id(conf.max_doc_seq_len, pos_doc, conf.vocab_map))
+                data_map['doc_pos_len'].append(len(pos_doc) if len(pos_doc) < conf.max_doc_seq_len else conf.max_doc_seq_len)
+                data_map['doc_neg'].extend(cur_arr[:4])
+                data_map['doc_neg_len'].extend(cur_len[:4])
+            pass
+    return data_map
+
 def get_data_siamese_rnn(file_path):
     """
     gen datasets, convert word into word ids.
